@@ -128,14 +128,16 @@ class Database {
     }
   }
 //更新資料到資料庫
-  Future<void> updateItem({String? uid, String? id}) async {
+  Future<void> updateItem({String? uid, String? id, String? date, String? name, int? amount, String? details}) async {
     try {
       firestore.collection('items')
           .doc(uid)
           .collection('items')
           .doc(id)
-          .update({//'job': job,
-        //'details': details,
+          .update({'date': date,
+        'name': name,
+        'amount': amount,
+        'details': details,
         });
     }
     catch (e) {
@@ -533,6 +535,21 @@ class ItemCard extends StatefulWidget {
 }
 
 class _ItemCardState extends State<ItemCard> {
+  TextEditingController dateController = TextEditingController();
+  TextEditingController nameController = TextEditingController();
+  TextEditingController amountController = TextEditingController();
+  TextEditingController detailsController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Set the initial values of the controllers
+    dateController.text = widget.item.date!;
+    nameController.text = widget.item.name!;
+    amountController.text = widget.item.amount.toString();
+    detailsController.text = widget.item.details!;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -570,13 +587,25 @@ class _ItemCardState extends State<ItemCard> {
               Align(
                 alignment: Alignment.center,
                 child: IconButton(
+                  icon: Icon(Icons.edit),
+                  onPressed: () {
+                    _showEditDialog(context);
+                  },
+                ),
+              ),
+              Align(
+                alignment: Alignment.center,
+                child: IconButton(
                   icon: Icon(Icons.delete_outline),
                   onPressed: () {
+                    // 刪除
                     Database(firestore: widget.firestore).deleteItem(
                       uid: widget.uid,
                       id: widget.item.id,
                     );
-                    setState(() {});
+                    setState(() {
+                      // 更新UI
+                    });
                   },
                 ),
               ),
@@ -586,4 +615,94 @@ class _ItemCardState extends State<ItemCard> {
       ),
     );
   }
+
+  void _showEditDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('編輯'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DateTimePicker(
+                  controller: dateController,
+                  decoration: InputDecoration(labelText: '日期'),
+                  type: DateTimePickerType.date,
+                  dateMask: 'yyyy/MM/dd',
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                  onChanged: (val) {
+                    setState(() {
+                      dateController.text = val ?? '';
+                    });
+                  },
+                ),
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(labelText: '品項'),
+                ),
+                TextField(
+                  controller: amountController,
+                  decoration: InputDecoration(labelText: '金額'),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                ),
+                TextField(
+                  controller: detailsController,
+                  decoration: InputDecoration(labelText: '備註'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('取消'),
+            ),
+            TextButton(
+              onPressed: () {
+                _updateItem();
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('儲存'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+  void _updateItem() {
+    String updatedDate = dateController.text.trim();
+    String updatedName = nameController.text.trim();
+    int updatedAmount = int.tryParse(amountController.text.trim()) ?? 0;
+    String updatedDetails = detailsController.text.trim();
+
+    // Update the item in the database using the provided Firestore instance
+    Database(firestore: widget.firestore).updateItem(
+      uid: widget.uid,
+      id: widget.item.id,
+      date: updatedDate,
+      name: updatedName,
+      amount: updatedAmount,
+      details: updatedDetails,
+    );
+
+    setState(() {
+      // Update the widget with the new values
+      widget.item.date = updatedDate;
+      widget.item.name = updatedName;
+      widget.item.amount = updatedAmount;
+      widget.item.details = updatedDetails;
+    });
+  }
 }
+
