@@ -456,7 +456,7 @@ class _HomeState extends State<Home> {
             ),
             ElevatedButton(
               onPressed: () {
-                if (itemController1.text.isNotEmpty) {
+                if (itemController1.text.isNotEmpty && itemController2.text.isNotEmpty && itemController3.text.isNotEmpty) {
                   setState(() {
                     //按下加號按鈕後跳到addItem
                     Database(firestore: widget.firestore).addItem(
@@ -471,6 +471,15 @@ class _HomeState extends State<Home> {
                     itemController3.clear();
                     itemController4.clear();
                   });
+                }
+                else {
+                    // 除了備註以外的欄位沒填就跳出訊息
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('請填寫【備註】以外的欄位'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
                 }
               },
               child: Text('新增'),
