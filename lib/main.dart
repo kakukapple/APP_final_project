@@ -307,183 +307,193 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  final todoController1=TextEditingController();
-  final todoController2=TextEditingController();
-  final todoController3=TextEditingController();
-  final todoController4=TextEditingController();
+  final todoController1 = TextEditingController();
+  final todoController2 = TextEditingController();
+  final todoController3 = TextEditingController();
+  final todoController4 = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('簡易記帳本 v1'),
+      appBar: AppBar(
+        title: Text('簡易記帳本 v1'),
         actions: [
           IconButton(
-              onPressed: () {
-                Auth(auth: widget.auth).signOut();
-              },
-              icon: Icon(Icons.exit_to_app)),
-        ],),
-      body: Column(
-        children: [
-          SizedBox(height: 20),
-          Text('新增帳款', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          //*日期
-          Card(
-            margin: EdgeInsets.all(20),
-            child: Padding(
-              padding: EdgeInsets.all(10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: DateTimePicker(
-                      controller: todoController1,
-                      decoration: InputDecoration(
-                        labelText: '日期',
+            onPressed: () {
+              Auth(auth: widget.auth).signOut();
+            },
+            icon: Icon(Icons.exit_to_app),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            SizedBox(height: 20),
+            Text('新增帳款', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            //*日期
+            Card(
+              margin: EdgeInsets.all(20),
+              child: Padding(
+                padding: EdgeInsets.all(10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: DateTimePicker(
+                        controller: todoController1,
+                        decoration: InputDecoration(
+                          labelText: '日期',
+                        ),
+                        type: DateTimePickerType.date,
+                        dateMask: 'yyyy/MM/dd',
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                        icon: Icon(Icons.calendar_today),
+                        dateLabelText: '選擇日期',
+                        onChanged: (val) => print(val),
+                        validator: (val) {
+                          // 添加邏輯驗證（可選）
+                          if (val == null || val.isEmpty) {
+                            return '請選擇日期';
+                          }
+                          return null;
+                        },
                       ),
-                      type: DateTimePickerType.date,
-                      dateMask: 'yyyy/MM/dd',
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
+                    ),
+                    IconButton(
                       icon: Icon(Icons.calendar_today),
-                      dateLabelText: '選擇日期',
-                      onChanged: (val) => print(val),
-                      validator: (val) {
-                        // 添加邏輯驗證（可選）
-                        if (val == null || val.isEmpty) {
-                          return '請選擇日期';
+                      onPressed: () {
+                        // 按下按鈕後的處理
+                        if (todoController1.text.isNotEmpty) {
+                          setState(() {
+                            //按下加號按鈕後跳到addTodo
+                            Database(firestore: widget.firestore).addTodo(
+                              uid: widget.auth.currentUser!.uid,
+                              date: todoController1.text.trim(),
+                              name: todoController2.text.trim(),
+                              amount: int.tryParse(todoController3.text.trim()),
+                              details: todoController4.text.trim(),
+                            );
+                            todoController1.clear();
+                            todoController2.clear();
+                            todoController3.clear();
+                            todoController4.clear();
+                          });
                         }
-                        return null;
                       },
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.calendar_today),
-                    onPressed: () {
-                      // 按下按鈕後的處理
-                      if (todoController1.text.isNotEmpty) {
-                        setState(() {
-                        //按下加號按鈕後跳到addTodo
-                          Database(firestore: widget.firestore).addTodo(uid: widget.auth.currentUser!.uid,
-                            date: todoController1.text.trim(),
-                            name: todoController2.text.trim(),
-                            amount: int.tryParse(todoController3.text.trim()),
-                            details: todoController4.text.trim());
-                        todoController1.clear();
-                        todoController2.clear();
-                        todoController3.clear();
-                        todoController4.clear();
-                      });
-                }
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
 
-          //*品項
-          Card(
-            margin: EdgeInsets.all(20),
-            child: Padding(
-              padding: EdgeInsets.all(10),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: todoController2,
-                          decoration: InputDecoration(
-                            labelText: '品項',
+            //*品項
+            Card(
+              margin: EdgeInsets.all(20),
+              child: Padding(
+                padding: EdgeInsets.all(10),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: todoController2,
+                            decoration: InputDecoration(
+                              labelText: '品項',
+                            ),
                           ),
                         ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.local_mall_outlined),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          //*金額
-          Card(
-            margin: EdgeInsets.all(20),
-            child: Padding(
-              padding: EdgeInsets.all(10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: todoController3,
-                      decoration: InputDecoration(
-                        labelText: '金額',
-                      ),
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
+                        IconButton(
+                          icon: Icon(Icons.local_mall_outlined),
+                          onPressed: () {},
+                        ),
                       ],
                     ),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.local_atm),
-                    onPressed: () {},
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
 
-          //*備註
-          Card(
-            margin: EdgeInsets.all(20),
-            child: Padding(
-              padding: EdgeInsets.all(10),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: todoController4,
-                          decoration: InputDecoration(
-                            labelText: '備註',
+            //*金額
+            Card(
+              margin: EdgeInsets.all(20),
+              child: Padding(
+                padding: EdgeInsets.all(10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: todoController3,
+                        decoration: InputDecoration(
+                          labelText: '金額',
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.local_atm),
+                      onPressed: () {},
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            //*備註
+            Card(
+              margin: EdgeInsets.all(20),
+              child: Padding(
+                padding: EdgeInsets.all(10),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: todoController4,
+                            decoration: InputDecoration(
+                              labelText: '備註',
+                            ),
                           ),
                         ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.edit_note),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
-                ],
+                        IconButton(
+                          icon: Icon(Icons.edit_note),
+                          onPressed: () {},
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          SizedBox(height: 20),
-          Text('目前帳款', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          SizedBox(height: 20),
-          //顯示未完成的工作
-          Expanded(child: StreamBuilder(
-            stream: widget.firestore.collection('items')
-                .doc(widget.auth.currentUser!.uid).collection('items')
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState==ConnectionState.active) {
-                if (snapshot.data!.docs.isEmpty) {
-                  return Center(child:
-                  Text("您目前尚未有任何帳款"),
-                  );
-                }
-                final List<Item> retVal=<Item>[];
-                snapshot.data!.docs.forEach((doc) {
-                  retVal.add(Item.fromDocumentSnapshot(documentSnapshot: doc));
-                });
-                return ListView.builder(
+            SizedBox(height: 20),
+            Text('目前帳款', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            SizedBox(height: 20),
+            //顯示未完成的工作
+            StreamBuilder(
+              stream: widget.firestore
+                  .collection('items')
+                  .doc(widget.auth.currentUser!.uid)
+                  .collection('items')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.active) {
+                  if (snapshot.data!.docs.isEmpty) {
+                    return Center(
+                      child: Text("您目前尚未有任何帳款"),
+                    );
+                  }
+                  final List<Item> retVal = <Item>[];
+                  snapshot.data!.docs.forEach((doc) {
+                    retVal.add(Item.fromDocumentSnapshot(documentSnapshot: doc));
+                  });
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
                     itemCount: snapshot.data!.docs.length,
                     itemBuilder: (context, index) {
                       return ItemCard(
@@ -491,20 +501,22 @@ class _HomeState extends State<Home> {
                         uid: widget.auth.currentUser!.uid,
                         item: retVal[index],
                       );
-                    });
-              }
-              else {
-                return Center(
-                  child: Text('Loading...'),
-                );
-              }
-            },
-          ),),
-        ],
+                    },
+                  );
+                } else {
+                  return Center(
+                    child: Text('Loading...'),
+                  );
+                }
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
 }
+
 
 class ItemCard extends StatefulWidget {
   final FirebaseFirestore firestore;
@@ -528,7 +540,10 @@ class _ItemCardState extends State<ItemCard> {
       child: Padding(
         padding: EdgeInsets.all(10),
         child: ListTile(
-          title: Text(widget.item.date!, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),),
+          title: Text(
+            widget.item.date!,
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -549,12 +564,24 @@ class _ItemCardState extends State<ItemCard> {
               ),
             ],
           ),
-          trailing: IconButton(icon: Icon(Icons.delete_outline),
-            onPressed: () {
-              Database(firestore: widget.firestore).updateItem(uid: widget.uid,
-                  id: widget.item.id);
-              setState(() {});
-            },),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.center,
+                child: IconButton(
+                  icon: Icon(Icons.delete_outline),
+                  onPressed: () {
+                    Database(firestore: widget.firestore).deleteItem(
+                      uid: widget.uid,
+                      id: widget.item.id,
+                    );
+                    setState(() {});
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
