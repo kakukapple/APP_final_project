@@ -601,16 +601,7 @@ class _ItemCardState extends State<ItemCard> {
                 alignment: Alignment.center,
                 child: IconButton(
                   icon: Icon(Icons.delete_outline),
-                  onPressed: () {
-                    // 刪除
-                    Database(firestore: widget.firestore).deleteItem(
-                      uid: widget.uid,
-                      id: widget.item.id,
-                    );
-                    setState(() {
-                      // 更新UI
-                    });
-                  },
+                  onPressed: _showDeleteConfirmationDialog,
                 ),
               ),
             ],
@@ -619,6 +610,40 @@ class _ItemCardState extends State<ItemCard> {
       ),
     );
   }
+  void _showDeleteConfirmationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('確認刪除'),
+          content: Text('您確定要刪除此項目嗎？'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // 关闭对话框
+              },
+              child: Text('取消'),
+            ),
+            TextButton(
+              onPressed: () {
+                // 删除操作
+                Database(firestore: widget.firestore).deleteItem(
+                  uid: widget.uid,
+                  id: widget.item.id,
+                );
+                setState(() {
+                  // 更新UI
+                });
+                Navigator.of(context).pop(); // 關閉對話框
+              },
+              child: Text('刪除'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   void _showEditDialog(BuildContext context) {
     showDialog(
