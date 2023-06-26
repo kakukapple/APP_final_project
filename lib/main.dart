@@ -112,7 +112,7 @@ class Database {
     }
   }
 //新增資料到資料庫
-  Future<void> addTodo({String? uid, String? date, String? name, int? amount, String? details}) async {
+  Future<void> addItem({String? uid, String? date, String? name, int? amount, String? details}) async {
     try {
       firestore.collection('items')
           .doc(uid)
@@ -309,10 +309,10 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  final todoController1 = TextEditingController();
-  final todoController2 = TextEditingController();
-  final todoController3 = TextEditingController();
-  final todoController4 = TextEditingController();
+  final itemController1 = TextEditingController();
+  final itemController2 = TextEditingController();
+  final itemController3 = TextEditingController();
+  final itemController4 = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -342,7 +342,7 @@ class _HomeState extends State<Home> {
                   children: [
                     Expanded(
                       child: DateTimePicker(
-                        controller: todoController1,
+                        controller: itemController1,
                         decoration: InputDecoration(
                           labelText: '日期',
                         ),
@@ -364,25 +364,7 @@ class _HomeState extends State<Home> {
                     ),
                     IconButton(
                       icon: Icon(Icons.calendar_today),
-                      onPressed: () {
-                        // 按下按鈕後的處理
-                        if (todoController1.text.isNotEmpty) {
-                          setState(() {
-                            //按下加號按鈕後跳到addTodo
-                            Database(firestore: widget.firestore).addTodo(
-                              uid: widget.auth.currentUser!.uid,
-                              date: todoController1.text.trim(),
-                              name: todoController2.text.trim(),
-                              amount: int.tryParse(todoController3.text.trim()),
-                              details: todoController4.text.trim(),
-                            );
-                            todoController1.clear();
-                            todoController2.clear();
-                            todoController3.clear();
-                            todoController4.clear();
-                          });
-                        }
-                      },
+                      onPressed: () {},
                     ),
                   ],
                 ),
@@ -400,7 +382,7 @@ class _HomeState extends State<Home> {
                       children: [
                         Expanded(
                           child: TextFormField(
-                            controller: todoController2,
+                            controller: itemController2,
                             decoration: InputDecoration(
                               labelText: '品項',
                             ),
@@ -426,7 +408,7 @@ class _HomeState extends State<Home> {
                   children: [
                     Expanded(
                       child: TextFormField(
-                        controller: todoController3,
+                        controller: itemController3,
                         decoration: InputDecoration(
                           labelText: '金額',
                         ),
@@ -456,7 +438,7 @@ class _HomeState extends State<Home> {
                       children: [
                         Expanded(
                           child: TextFormField(
-                            controller: todoController4,
+                            controller: itemController4,
                             decoration: InputDecoration(
                               labelText: '備註',
                             ),
@@ -472,8 +454,30 @@ class _HomeState extends State<Home> {
                 ),
               ),
             ),
+            ElevatedButton(
+              onPressed: () {
+                if (itemController1.text.isNotEmpty) {
+                  setState(() {
+                    //按下加號按鈕後跳到addItem
+                    Database(firestore: widget.firestore).addItem(
+                      uid: widget.auth.currentUser!.uid,
+                      date: itemController1.text.trim(),
+                      name: itemController2.text.trim(),
+                      amount: int.tryParse(itemController3.text.trim()),
+                      details: itemController4.text.trim(),
+                    );
+                    itemController1.clear();
+                    itemController2.clear();
+                    itemController3.clear();
+                    itemController4.clear();
+                  });
+                }
+              },
+              child: Text('新增'),
+            ),
+
             SizedBox(height: 20),
-            Text('目前帳款', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text('目前款項', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             SizedBox(height: 20),
             //顯示未完成的工作
             StreamBuilder(
@@ -486,7 +490,7 @@ class _HomeState extends State<Home> {
                 if (snapshot.connectionState == ConnectionState.active) {
                   if (snapshot.data!.docs.isEmpty) {
                     return Center(
-                      child: Text("您目前尚未有任何帳款"),
+                      child: Text("您目前尚未有任何款項"),
                     );
                   }
                   final List<Item> retVal = <Item>[];
