@@ -350,11 +350,7 @@ class _HomeState extends State<Home> {
             child: Padding(
               padding: EdgeInsets.all(10),
               child: Row(children: [
-                Expanded(child: TextFormField(controller: todoController2,
-                                              keyboardType: TextInputType.number,
-                                              inputFormatters: [
-                                                FilteringTextInputFormatter.digitsOnly,
-                                              ],)),
+                Expanded(child: TextFormField(controller: todoController2,)),
                 IconButton(icon: Icon(Icons.blinds_sharp),
                     onPressed: () {}),
               ],),
