@@ -3,31 +3,37 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'package:date_time_picker/date_time_picker.dart';
 import 'package:final_project/firebase_options.dart';
 
-class Todo {
+class Item {
   String? id;
-  String? job;
+  String? date;
+  String? name;
+  int? amount;
   String? details;
-  bool? done;
 
-  Todo({this.id,
-    this.job,
+  Item({this.id,
+    this.date,
+    this.name,
+    this.amount,
     this.details,
-    this.done});
+  });
 
-  Todo.fromDocumentSnapshot({DocumentSnapshot? documentSnapshot}) {
+  Item.fromDocumentSnapshot({DocumentSnapshot? documentSnapshot}) {
     if (documentSnapshot!.data()!=null) {
       id=documentSnapshot.id;
-      job=(documentSnapshot.data() as Map<String, dynamic>)['job'] as String;
+      date=(documentSnapshot.data() as Map<String, dynamic>)['date'] as String;
+      name=(documentSnapshot.data() as Map<String, dynamic>)['name'] as String;
+      amount=(documentSnapshot.data() as Map<String, dynamic>)['amount'] as int;
       details=(documentSnapshot.data() as Map<String, dynamic>)['details'] as String;
-      done=(documentSnapshot.data() as Map<String, dynamic>)['done'] as bool;
     }
     else {
       id='';
-      job='';
+      date='';
+      name='';
+      amount=0;
       details='';
-      done=false;
     }
   }
 }
@@ -52,7 +58,7 @@ class Auth {
       rethrow;
     }
   }
-
+//登入
   Future<String?> signIn({String? email, String? password}) async {
     try {
       await auth.signInWithEmailAndPassword(
@@ -66,7 +72,7 @@ class Auth {
       rethrow;
     }
   }
-
+//登出
   Future<String?> signOut() async {
     try {
       await auth.signOut();
@@ -86,18 +92,17 @@ class Database {
 
   Database({required this.firestore});
 
-  Stream<List<Todo>> streamTodos({required String uid}) {
+  Stream<List<Item>> streamItem({required String uid}) {
     try {
       return firestore
-          .collection('todos')
+          .collection('items')
           .doc(uid)
-          .collection('todos')
-          .where('done', isEqualTo: false)
+          .collection('items')
           .snapshots()
           .map((QuerySnapshot q) {
-        final List<Todo> retVal=<Todo>[];
+        final List<Item> retVal=<Item>[];
         q.docs.forEach((doc) {
-          retVal.add(Todo.fromDocumentSnapshot(documentSnapshot: doc));
+          retVal.add(Item.fromDocumentSnapshot(documentSnapshot: doc));
         });
         return retVal;
       });
@@ -106,42 +111,43 @@ class Database {
       rethrow;
     }
   }
-//儲存資料到資料庫
-  Future<void> addTodo({String? uid, String? job, String? details}) async {
+//新增資料到資料庫
+  Future<void> addTodo({String? uid, String? date, String? name, int? amount, String? details}) async {
     try {
-      firestore.collection('todos')
+      firestore.collection('items')
           .doc(uid)
-          .collection('todos')
+          .collection('items')
           .doc()
-          .set({'job': job,
-        'details': details,
-        'done': false});
+          .set({'date': date,
+        'name': name,
+        'amount': amount,
+        'details': details});
     }
     catch (e) {
       rethrow;
     }
   }
-
-  Future<void> updateTodo({String? uid, String? id}) async {
+//更新資料到資料庫
+  Future<void> updateItem({String? uid, String? id}) async {
     try {
-      firestore.collection('todos')
+      firestore.collection('items')
           .doc(uid)
-          .collection('todos')
+          .collection('items')
           .doc(id)
           .update({//'job': job,
         //'details': details,
-        'done': true});
+        });
     }
     catch (e) {
       rethrow;
     }
   }
-
-  Future<void> deleteTodo({String? uid, String? id}) async {
+//刪除資料
+  Future<void> deleteItem({String? uid, String? id}) async {
     try {
-      firestore.collection('todos')
+      firestore.collection('items')
           .doc(uid)
-          .collection('todos')
+          .collection('items')
           .doc(id)
           .delete();
     }
@@ -179,7 +185,6 @@ class MyApp extends StatelessWidget {
                 child: Text('Loading...'),
               ),
             );
-
           }),
     );
   }
@@ -304,11 +309,13 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   final todoController1=TextEditingController();
   final todoController2=TextEditingController();
+  final todoController3=TextEditingController();
+  final todoController4=TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Todo App v1'),
+      appBar: AppBar(title: Text('簡易記帳本 v1'),
         actions: [
           IconButton(
               onPressed: () {
@@ -319,97 +326,170 @@ class _HomeState extends State<Home> {
       body: Column(
         children: [
           SizedBox(height: 20),
-          Text('Add Todo Here', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text('新增帳款', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           //*日期
           Card(
             margin: EdgeInsets.all(20),
             child: Padding(
               padding: EdgeInsets.all(10),
-              child: Row(children: [
-                Expanded(child: TextFormField(controller: todoController1,)),
-                IconButton(icon: Icon(Icons.add),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: DateTimePicker(
+                      controller: todoController1,
+                      decoration: InputDecoration(
+                        labelText: '日期',
+                      ),
+                      type: DateTimePickerType.date,
+                      dateMask: 'yyyy/MM/dd',
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                      icon: Icon(Icons.calendar_today),
+                      dateLabelText: '選擇日期',
+                      onChanged: (val) => print(val),
+                      validator: (val) {
+                        // 添加邏輯驗證（可選）
+                        if (val == null || val.isEmpty) {
+                          return '請選擇日期';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.calendar_today),
                     onPressed: () {
+                      // 按下按鈕後的處理
                       if (todoController1.text.isNotEmpty) {
                         setState(() {
-                          //按下加號按鈕後跳到addTodo
+                        //按下加號按鈕後跳到addTodo
                           Database(firestore: widget.firestore).addTodo(uid: widget.auth.currentUser!.uid,
-                              job: todoController1.text.trim(),
-                              details: todoController2.text.trim());
-                          todoController1.clear();
-                          todoController2.clear();
-                        });
-                      }
-
-                    }),
-              ],),
+                            date: todoController1.text.trim(),
+                            name: todoController2.text.trim(),
+                            amount: int.tryParse(todoController3.text.trim()),
+                            details: todoController4.text.trim());
+                        todoController1.clear();
+                        todoController2.clear();
+                        todoController3.clear();
+                        todoController4.clear();
+                      });
+                }
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
+
           //*品項
           Card(
             margin: EdgeInsets.all(20),
             child: Padding(
               padding: EdgeInsets.all(10),
-              child: Row(children: [
-                Expanded(child: TextFormField(controller: todoController2,)),
-                IconButton(icon: Icon(Icons.blinds_sharp),
-                    onPressed: () {}),
-              ],),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: todoController2,
+                          decoration: InputDecoration(
+                            labelText: '品項',
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.local_mall_outlined),
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-          //*金額(限制只能輸入數字)
+
+          //*金額
           Card(
             margin: EdgeInsets.all(20),
             child: Padding(
               padding: EdgeInsets.all(10),
-              child: Row(children: [
-                Expanded(child: TextFormField(controller: todoController2,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],)),
-                IconButton(icon: Icon(Icons.blinds_sharp),
-                    onPressed: () {}),
-              ],),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: todoController3,
+                      decoration: InputDecoration(
+                        labelText: '金額',
+                      ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.local_atm),
+                    onPressed: () {},
+                  ),
+                ],
+              ),
             ),
           ),
+
           //*備註
           Card(
             margin: EdgeInsets.all(20),
             child: Padding(
               padding: EdgeInsets.all(10),
-              child: Row(children: [
-                Expanded(child: TextFormField(controller: todoController2,)),
-                IconButton(icon: Icon(Icons.blinds_sharp),
-                    onPressed: () {}),
-              ],),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: todoController4,
+                          decoration: InputDecoration(
+                            labelText: '備註',
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.edit_note),
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
           SizedBox(height: 20),
-          Text('Your Todos', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text('目前帳款', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          SizedBox(height: 20),
           //顯示未完成的工作
           Expanded(child: StreamBuilder(
-            stream: widget.firestore.collection('todos')
-                .doc(widget.auth.currentUser!.uid).collection('todos')
-                .where('done', isEqualTo: false)
+            stream: widget.firestore.collection('items')
+                .doc(widget.auth.currentUser!.uid).collection('items')
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState==ConnectionState.active) {
                 if (snapshot.data!.docs.isEmpty) {
                   return Center(child:
-                  Text("You don't have any unfinished jobs"),
+                  Text("您目前尚未有任何帳款"),
                   );
                 }
-                final List<Todo> retVal=<Todo>[];
+                final List<Item> retVal=<Item>[];
                 snapshot.data!.docs.forEach((doc) {
-                  retVal.add(Todo.fromDocumentSnapshot(documentSnapshot: doc));
+                  retVal.add(Item.fromDocumentSnapshot(documentSnapshot: doc));
                 });
                 return ListView.builder(
                     itemCount: snapshot.data!.docs.length,
                     itemBuilder: (context, index) {
-                      return TodoCard(
+                      return ItemCard(
                         firestore: widget.firestore,
                         uid: widget.auth.currentUser!.uid,
-                        todo: retVal[index],
+                        item: retVal[index],
                       );
                     });
               }
@@ -426,21 +506,21 @@ class _HomeState extends State<Home> {
   }
 }
 
-class TodoCard extends StatefulWidget {
+class ItemCard extends StatefulWidget {
   final FirebaseFirestore firestore;
   final String uid;
-  final Todo todo;
+  final Item item;
 
-  const TodoCard({Key? key,
+  const ItemCard({Key? key,
     required this.firestore,
     required this.uid,
-    required this.todo}) : super(key: key);
+    required this.item}) : super(key: key);
 
   @override
-  State<TodoCard> createState() => _TodoCardState();
+  State<ItemCard> createState() => _ItemCardState();
 }
 
-class _TodoCardState extends State<TodoCard> {
+class _ItemCardState extends State<ItemCard> {
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -448,12 +528,31 @@ class _TodoCardState extends State<TodoCard> {
       child: Padding(
         padding: EdgeInsets.all(10),
         child: ListTile(
-          title: Text(widget.todo.job!, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),),
-          subtitle: Text(widget.todo.details!, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),),
-          trailing: IconButton(icon: Icon(Icons.update),
+          title: Text(widget.item.date!, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(height: 10),
+              Text(
+                '品項: ' + widget.item.name!,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 10),
+              Text(
+                '金額: ' + widget.item.amount.toString(),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 10),
+              Text(
+                '備註: ' + widget.item.details!,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          trailing: IconButton(icon: Icon(Icons.delete_outline),
             onPressed: () {
-              Database(firestore: widget.firestore).updateTodo(uid: widget.uid,
-                  id: widget.todo.id);
+              Database(firestore: widget.firestore).updateItem(uid: widget.uid,
+                  id: widget.item.id);
               setState(() {});
             },),
         ),

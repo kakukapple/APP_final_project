@@ -31,6 +31,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  date_time_picker: ^2.0.0
   firebase_core: ^1.10.0
   firebase_auth: ^3.1.0
   cloud_firestore: ^3.1.0
