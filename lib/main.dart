@@ -36,6 +36,20 @@ class Item {
       details='';
     }
   }
+
+  // 計算結餘
+  int calculateBalance() {
+    // 假設已支出的金額為 spentAmount，amount 為款項金額（String?）
+    int spentAmount = 0;
+    int? parsedAmount = int.tryParse(amount ?? '');
+    int actualAmount = parsedAmount ?? 55;  // 預設款項金額為 55
+
+    if (amount?.isNotEmpty == true && amount?[0] != '+') {
+      actualAmount = -actualAmount;
+    }
+
+    return actualAmount - spentAmount;
+  }
 }
 
 class Auth {
@@ -458,7 +472,7 @@ class _HomeState extends State<Home> {
               onPressed: () {
                 if (itemController1.text.isNotEmpty && itemController2.text.isNotEmpty && itemController3.text.isNotEmpty) {
                   setState(() {
-                    //按下加號按鈕後跳到addItem
+                    //按下新增按鈕後跳到addItem
                     Database(firestore: widget.firestore).addItem(
                       uid: widget.auth.currentUser!.uid,
                       date: itemController1.text.trim(),
@@ -488,7 +502,6 @@ class _HomeState extends State<Home> {
             SizedBox(height: 20),
             Text('目前款項', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             SizedBox(height: 20),
-            //顯示未完成的工作
             StreamBuilder(
               stream: widget.firestore
                   .collection('items')
@@ -506,17 +519,28 @@ class _HomeState extends State<Home> {
                   snapshot.data!.docs.forEach((doc) {
                     retVal.add(Item.fromDocumentSnapshot(documentSnapshot: doc));
                   });
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
-                    itemCount: snapshot.data!.docs.length,
-                    itemBuilder: (context, index) {
-                      return ItemCard(
-                        firestore: widget.firestore,
-                        uid: widget.auth.currentUser!.uid,
-                        item: retVal[index],
-                      );
-                    },
+                  //計算結餘
+                  int totalBalance = 0;
+                  retVal.forEach((item) {
+                    totalBalance += item.calculateBalance();
+                  });
+                  return Column(
+                    children: [
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemCount: snapshot.data!.docs.length,
+                        itemBuilder: (context, index) {
+                          return ItemCard(
+                            firestore: widget.firestore,
+                            uid: widget.auth.currentUser!.uid,
+                            item: retVal[index],
+                          );
+                        },
+                      ),
+                      SizedBox(height: 20),
+                      Text('目前結餘: $totalBalance', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    ],
                   );
                 } else {
                   return Center(
@@ -525,6 +549,7 @@ class _HomeState extends State<Home> {
                 }
               },
             ),
+            SizedBox(height: 20),
           ],
         ),
       ),
@@ -545,6 +570,20 @@ class ItemCard extends StatefulWidget {
 
   @override
   State<ItemCard> createState() => _ItemCardState();
+
+  @override
+  Widget build(BuildContext context) {
+    final int balance = item.calculateBalance();
+    // ...
+
+    return ListTile(
+      // ...
+      trailing: Text(
+        '結餘: $balance',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
+    );
+  }
 }
 
 class _ItemCardState extends State<ItemCard> {
