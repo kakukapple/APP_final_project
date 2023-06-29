@@ -10,7 +10,7 @@ class Item {
   String? id;
   String? date;
   String? name;
-  int? amount;
+  String? amount;
   String? details;
 
   Item({this.id,
@@ -25,14 +25,14 @@ class Item {
       id=documentSnapshot.id;
       date=(documentSnapshot.data() as Map<String, dynamic>)['date'] as String;
       name=(documentSnapshot.data() as Map<String, dynamic>)['name'] as String;
-      amount=(documentSnapshot.data() as Map<String, dynamic>)['amount'] as int;
+      amount=(documentSnapshot.data() as Map<String, dynamic>)['amount'] as String;
       details=(documentSnapshot.data() as Map<String, dynamic>)['details'] as String;
     }
     else {
       id='';
       date='';
       name='';
-      amount=0;
+      amount='';
       details='';
     }
   }
@@ -112,7 +112,7 @@ class Database {
     }
   }
 //新增資料到資料庫
-  Future<void> addItem({String? uid, String? date, String? name, int? amount, String? details}) async {
+  Future<void> addItem({String? uid, String? date, String? name, String? amount, String? details}) async {
     try {
       firestore.collection('items')
           .doc(uid)
@@ -128,7 +128,7 @@ class Database {
     }
   }
 //更新資料到資料庫
-  Future<void> updateItem({String? uid, String? id, String? date, String? name, int? amount, String? details}) async {
+  Future<void> updateItem({String? uid, String? id, String? date, String? name, String? amount, String? details}) async {
     try {
       firestore.collection('items')
           .doc(uid)
@@ -399,7 +399,7 @@ class _HomeState extends State<Home> {
               ),
             ),
 
-            //*金額
+            //*金額(只能輸入數字及+-)
             Card(
               margin: EdgeInsets.all(20),
               child: Padding(
@@ -410,11 +410,11 @@ class _HomeState extends State<Home> {
                       child: TextFormField(
                         controller: itemController3,
                         decoration: InputDecoration(
-                          labelText: '金額',
+                          labelText: '金額 (若為收入請在最前面打一個+)',
                         ),
-                        keyboardType: TextInputType.number,
+                        keyboardType: TextInputType.phone,
                         inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9+-]')),
                         ],
                       ),
                     ),
@@ -463,7 +463,7 @@ class _HomeState extends State<Home> {
                       uid: widget.auth.currentUser!.uid,
                       date: itemController1.text.trim(),
                       name: itemController2.text.trim(),
-                      amount: int.tryParse(itemController3.text.trim()),
+                      amount: itemController3.text.trim(),
                       details: itemController4.text.trim(),
                     );
                     itemController1.clear();
@@ -552,6 +552,7 @@ class _ItemCardState extends State<ItemCard> {
   TextEditingController nameController = TextEditingController();
   TextEditingController amountController = TextEditingController();
   TextEditingController detailsController = TextEditingController();
+  String str = '支出';
 
   @override
   void initState() {
@@ -559,8 +560,13 @@ class _ItemCardState extends State<ItemCard> {
     // Set the initial values of the controllers
     dateController.text = widget.item.date!;
     nameController.text = widget.item.name!;
-    amountController.text = widget.item.amount.toString();
+    amountController.text = widget.item.amount!.replaceAll(RegExp(r'[^0-9]'), '');
     detailsController.text = widget.item.details!;
+    if (widget.item.amount!.isNotEmpty) {
+      if(widget.item.amount!.substring(0, 1) == '+'){
+        str = "收入";
+      }
+    }
   }
 
   @override
@@ -571,7 +577,7 @@ class _ItemCardState extends State<ItemCard> {
         padding: EdgeInsets.all(10),
         child: ListTile(
           title: Text(
-            widget.item.date!,
+            dateController.text + ' ' + str,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           subtitle: Column(
@@ -579,17 +585,17 @@ class _ItemCardState extends State<ItemCard> {
             children: [
               SizedBox(height: 10),
               Text(
-                '品項: ' + widget.item.name!,
+                '品項: ' + nameController.text,
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 10),
               Text(
-                '金額: ' + widget.item.amount.toString(),
+                '金額: ' + amountController.text,
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 10),
               Text(
-                '備註: ' + widget.item.details!,
+                '備註: ' + detailsController.text,
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
               ),
             ],
@@ -685,9 +691,9 @@ class _ItemCardState extends State<ItemCard> {
                 TextField(
                   controller: amountController,
                   decoration: InputDecoration(labelText: '金額'),
-                  keyboardType: TextInputType.number,
+                  keyboardType: TextInputType.phone,
                   inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9+-]')),
                   ],
                 ),
                 TextField(
@@ -721,7 +727,7 @@ class _ItemCardState extends State<ItemCard> {
   void _updateItem() {
     String updatedDate = dateController.text.trim();
     String updatedName = nameController.text.trim();
-    int updatedAmount = int.tryParse(amountController.text.trim()) ?? 0;
+    String updatedAmount = amountController.text.trim();
     String updatedDetails = detailsController.text.trim();
 
     // Update the item in the database using the provided Firestore instance
